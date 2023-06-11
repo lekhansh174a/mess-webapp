@@ -4,76 +4,151 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login | MessWebApp</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f1f1f1;
+	    background-image: url("https://images.pexels.com/photos/616401/pexels-photo-616401.jpeg");
+	    background-size: 1920px 1080px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        
+        .container {
+            background-color: #fff;
+            padding: 18px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        input {
+            display: block;
+            width: 95%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            background-color: #4caf50;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .error {
+            color: red;
+            margin-top: 5px;
+        }
+    </style>
 </head>
 <body>
-        <input type="number" style="display: block;" name="roll" id="roll" placeholder="Enter Rollno.">
-        <input type="number" style="display: none;" name="otp" id="otp" placeholder="Enter OTP">
-        <button onclick="generateOTP()" style="display: block;" id="next" type="button">Next</button>
-        <button onclick="checkOtp()" style="display: none;" id="submit" type="button">Submit</button>
+    <div class="container">
+        <h1>Login | MessWebApp</h1>
+        <input type="number" name="roll" id="roll" placeholder="Enter Rollno.">
+        <input type="number" name="otp" id="otp" placeholder="Enter OTP" style="display: none;">
+        <button onclick="generateOTP()" id="next" type="button">Next</button>
+        <button onclick="checkOtp()" id="submit" type="button" style="display: none;">Submit</button>
+        <p class="error" id="error-msg"></p>
+    </div>
 
     <script>
-        const rollElm = document.querySelector('#roll')
-        const otpElm = document.querySelector('#otp')
-        const nextBtn = document.querySelector('#next')
-        const submitBtn = document.querySelector('#submit')
+        const rollElm = document.querySelector('#roll');
+        const otpElm = document.querySelector('#otp');
+        const nextBtn = document.querySelector('#next');
+        const submitBtn = document.querySelector('#submit');
+        const errorMsg = document.querySelector('#error-msg');
+
         function generateOTP() {
-            const roll = rollElm.value
-            nextBtn.disabled = true
-            nextBtn.innerHTML = 'Loading'
+            const roll = rollElm.value;
+            nextBtn.disabled = true;
+            nextBtn.innerHTML = 'Loading...';
+            errorMsg.textContent = '';
+
             const formData = new URLSearchParams();
-            formData.append('roll',roll );
+            formData.append('roll', roll);
+
             fetch('/authenticate/generateOTP', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: formData
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: formData
             })
             .then(response => response.json())
             .then(data => {
                 if (data.status) {
-                    nextBtn.style.display = "none"
-                    submitBtn.style.display = "block"
-                    otpElm.style.display = "block"
-                    rollElm.readOnly = true
+                    nextBtn.style.display = "none";
+                    submitBtn.style.display = "block";
+                    otpElm.style.display = "block";
+                    rollElm.readOnly = true;
                 } else {
-                    nextBtn.disabled = false
+                    nextBtn.disabled = false;
+                    nextBtn.innerHTML = 'Next';
+                    errorMsg.textContent = 'Failed to generate OTP. Please try again.';
                 }
             })
             .catch(error => {
                 console.error(error);
+                nextBtn.disabled = false;
+                nextBtn.innerHTML = 'Next';
+                errorMsg.textContent = 'An error occurred. Please try again.';
             });
         }
 
         function checkOtp() {
-                const roll = rollElm.value
-                const otp = otpElm.value
-                const formData = new URLSearchParams();
-                formData.append('roll',roll)
-                formData.append('otp',otp)
-                fetch('/authenticate',{
-                    method:'POST',
-                    headers: {
-                        'Content-Type' : 'application/x-www-form-urlencoded'
-                    },
-                    body: formData
-                }).then(response => response.json())
-                .then(data => {
-                    if (data.authenticated) {
-                        alert('You are authenticated')
-                        setCookie('token',data.id,30)
-                    }  else {
-                        alert('You are not authenticated')
-                    }
-                }).catch(err => console.log(err))
-        }
-        function setCookie(name, value, expirationDays) {
-        const date = new Date();
-        date.setTime(date.getTime() + (expirationDays * 24 * 60 * 60 * 1000));
-        const expires = "expires=" + date.toUTCString();
-        document.cookie = name + "=" + value + ";" + expires + ";path=/";
+            const roll = rollElm.value;
+            const otp = otpElm.value;
+
+            const formData = new URLSearchParams();
+            formData.append('roll', roll);
+            formData.append('otp', otp);
+
+            fetch('/authenticate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.authenticated) {
+                    alert('You are authenticated');
+                    setCookie('token', data.id, 30);
+                } else {
+                    alert('You are not authenticated');
+                }
+            })
+            .catch(err => console.log(err));
         }
 
+        function setCookie(name, value, expirationDays) {
+            const date = new Date();
+            date.setTime(date.getTime() + (expirationDays * 24 * 60 * 60 * 1000));
+            const expires = "expires=" + date.toUTCString();
+            document.cookie = name + "=" + value + ";" + expires + ";path=/";
+        }
     </script>
 </body>
 </html>
